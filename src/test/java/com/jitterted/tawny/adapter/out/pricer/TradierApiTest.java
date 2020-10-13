@@ -1,5 +1,9 @@
 package com.jitterted.tawny.adapter.out.pricer;
 
+import com.jitterted.tawny.TradierConfig;
+import com.jitterted.tawny.domain.Contract;
+import com.jitterted.tawny.domain.DateConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,17 +22,24 @@ import static org.assertj.core.api.Assertions.*;
 
 // random_port thingy here is required to autowire a TestRestTemplate
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Tag("integration")
 public class TradierApiTest {
 
   @Autowired
   private TestRestTemplate testRestTemplate;
 
+  @Autowired
+  private TradierConfig tradierConfig;
+
   @Test
   public void requestOptionQuoteViaXmlApiReturnsQuote() throws Exception {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(Collections.singletonList(MediaType.APPLICATION_XML));
-    headers.set("Authorization", "Bearer " + "Lk8GquRZ1i5n2MwAsYCAo2g1HSfR");
-    String url = "https://sandbox.tradier.com/v1/markets/quotes?symbols=AMD201016C00075000,AAPL,AMD";
+    headers.set("Authorization", "Bearer " + tradierConfig.getAccessToken());
+    String optionSymbol = new ContractToOptionSymbolConverter().symbolFor(
+        new Contract("AMD", "C", DateConstants.OCT_16_2020, 75)
+    );
+    String url = "https://sandbox.tradier.com/v1/markets/quotes?symbols=" + optionSymbol + ",AAPL,AMD";
     HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 
     ResponseEntity<Quotes> quotesResponse = testRestTemplate.exchange(
@@ -44,7 +55,7 @@ public class TradierApiTest {
 
     assertThat(quotes)
         .extracting(Quote::getSymbol)
-        .contains("AMD");
+        .contains(optionSymbol);
 
     quotes.stream().forEach(quote -> System.out.println(quote.getSymbol() + " = " + quote.getLast()));
   }

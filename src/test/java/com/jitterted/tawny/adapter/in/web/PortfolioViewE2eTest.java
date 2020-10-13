@@ -1,5 +1,8 @@
 package com.jitterted.tawny.adapter.in.web;
 
+import com.jitterted.tawny.TradierConfig;
+import com.jitterted.tawny.domain.DateConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,18 +22,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Tag("integration")
 public class PortfolioViewE2eTest {
 
   @Autowired
   MockMvc mockMvc;
 
+  @Autowired
+  private TradierConfig tradierConfig;
+
+  @Test
+  public void tradierConfig() throws Exception {
+    assertThat(tradierConfig.getAccessToken())
+        .isNotBlank();
+  }
+
   @Test
   public void postFormToOpenPositionShowsInformationOnView() throws Exception {
     MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
     formParams.add("underlyingSymbol", "AMD");
-    formParams.add("type", "call");
+    formParams.add("optionType", "C"); // radio button choice
     formParams.add("quantity", "10");
-    formParams.add("expiration", "2020-09-20T10:00:00.000-04:00");
+    formParams.add("expiration", DateConstants.OCT_16_2020.toString());
     formParams.add("strikePrice", "75");
     formParams.add("unitCost", "5");
 
@@ -51,6 +64,6 @@ public class PortfolioViewE2eTest {
         .hasSize(1);
 
     assertThat(mvcResult.getResponse().getContentAsString())
-        .contains("<td>AMD</td>", "75", "5000");
+        .contains("<td>AMD</td>", "75", "$5,000.00");
   }
 }
